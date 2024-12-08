@@ -154,7 +154,7 @@ const player = {
             this.gravityStrength = 1;
         }
 
-        return xDirection;
+        return xDirection * asdf;
     },
 
     willCollide(Block) {
@@ -168,7 +168,15 @@ const player = {
     },
 
     processCollisions() {
-        // TODO: Fix the wallhopping
+        // TODO: fix wallhopping (not an issue yet)
+
+        if (this.nextPos.x < this.sideLength / 2) {
+            this.velocity.x = this.velocity.x > 0 ? this.velocity.x : 0;
+            this.pos.x = this.sideLength / 2;
+        } else if (this.nextPos.x > canvas.width - this.sideLength / 2) {
+            this.velocity.x = this.velocity.x < 0 ? this.velocity.x : 0;
+            this.pos.x = canvas.width - this.sideLength / 2;
+        }
 
         this.canJump = this.canJump > 0 ? this.canJump - 1 : 0;
 
@@ -179,14 +187,6 @@ const player = {
             this.velocity.y = this.velocity.y < 0 ? this.velocity.y : 0;
             this.pos.y = canvas.height - this.sideLength / 2;
             this.canJump = 4;
-        }
-
-        if (this.nextPos.x < this.sideLength / 2) {
-            this.velocity.x = this.velocity.x > 0 ? this.velocity.x : 0;
-            this.pos.x = this.sideLength / 2;
-        } else if (this.nextPos.x > canvas.width - this.sideLength / 2) {
-            this.velocity.x = this.velocity.x < 0 ? this.velocity.x : 0;
-            this.pos.x = canvas.width - this.sideLength / 2;
         }
 
         // Code for collisions with Blocks/blocks here [UNFINISHED]
@@ -224,7 +224,14 @@ const player = {
         // TODO: Make the player be able to function when the spirit is in habiting blocks (detached from player)
         let xDirection = this.processkeyEvents();
 
+        this.nextPos = new Vector2(
+            this.pos.x + this.velocity.x + xDirection,
+            this.pos.y + this.velocity.y + (this.gravityStrength * this.size) / 500
+        );
+
         if (!this.freeSpirit) {
+            this.processCollisions();
+
             this.velocity.y += (this.gravityStrength * this.size) / 500;
 
             const speedLim = new Vector2(11, 50);
@@ -237,10 +244,10 @@ const player = {
                 this.velocity.y = (-2 * this.size) / speedLim.y;
             }
 
+            // this.processCollisions();
+
             this.pos.x += this.velocity.x;
             this.pos.y += this.velocity.y;
-
-            this.processCollisions();
         } else {
             this.velocity.x = 0;
             this.velocity.y = 0;
@@ -270,11 +277,6 @@ const player = {
         //         new Block(this.pos, this.sideLength, this.colour)
         //     );
         // } // TODO: Make the player inhabit the block when shift is released
-
-        this.nextPos = new Vector2(
-            this.pos.x + this.velocity.x + 0.5 * xDirection,
-            this.pos.y + this.velocity.y + (this.gravityStrength * this.size) / 500
-        );
     },
 
     draw() {
