@@ -1,37 +1,19 @@
 <!DOCTYPE html>
 <html lang="en">
     <head>
-        <title>Luminx</title>
-        <link rel="icon" href="./assets/images/favicon.ico" />
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <meta name="description" content="Little game, because bored." />
-        <style>
-            canvas {
-                border: 0px solid #000000;
-                margin-top: 0px;
-                margin-right: 0px;
-                margin-left: 0px;
-                margin-bottom: 0px;
-                background-color: rgb(50, 50, 50);
-            }
-            body {
-                background-color: #5d5d5d;
-            }
-            html,
-            body {
-                margin: 0 !important;
-                border: 0 !important;
-                padding: 0 !important;
-                width: 100%;
-                height: 100%;
-                overflow: hidden;
-            }
-        </style>
+
+        <link rel="icon" href="./favicon.ico" />
+        <title>Luminx</title>
+        <meta name="description" content="WIP Platformer" />
+
+        <link rel="stylesheet" href="./style.css" />
     </head>
     <body>
-        <canvas id="gameCanvas">
-            <script src="game.js"></script>
-        </canvas>
+        <div id="page" class="width-scaling">
+            <canvas id="game-canvas" width="600" height="300"></canvas>
+            <script src="./canvas.js"></script>
+        </div>
     </body>
 </html>
