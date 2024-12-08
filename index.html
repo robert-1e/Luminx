@@ -4,16 +4,30 @@
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-        <link rel="icon" href="./favicon.ico" />
+        <link rel="icon" href="/favicon.ico" />
         <title>Luminx</title>
-        <meta name="description" content="WIP Platformer" />
+        <meta name="description" content="WIP Platformer game" />
 
         <link rel="stylesheet" href="./style.css" />
     </head>
     <body>
-        <div id="page" class="width-scaling">
-            <canvas id="game-canvas" width="600" height="300"></canvas>
-            <script src="./canvas.js"></script>
+        <div id="page">
+            <!-- I would put these into png files, but effort -->
+            <a href="/singleplayer">
+                <img
+                    class="_player"
+                    draggable="false"
+                    src="data:image/png;base64,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"
+                    alt="Singleplayer" />
+            </a>
+
+            <a href="/multiplayer">
+                <img
+                    class="_player"
+                    draggable="false"
+                    src="data:image/png;base64,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"
+                    alt="Multiplayer" />
+            </a>
         </div>
     </body>
 </html>

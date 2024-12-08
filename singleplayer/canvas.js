@@ -64,12 +64,48 @@ class Block {
     }
 }
 
+class BlockCluster {
+    constructor(blocks) {
+        this.inhabited = false;
+        this.blocks = blocks;
+    }
+
+    draw() {
+        let allPoints = [];
+
+        for (const block of this.blocks) {
+            let blockHalfSideLen = block.sideLength / 2;
+
+            allPoints.push(
+                new Vector2(block.pos.x - blockHalfSideLen, block.pos.y - blockHalfSideLen),
+                new Vector2(block.pos.x - blockHalfSideLen, block.pos.y + blockHalfSideLen),
+                new Vector2(block.pos.x + blockHalfSideLen, block.pos.y + blockHalfSideLen),
+                new Vector2(block.pos.x + blockHalfSideLen, block.pos.y - blockHalfSideLen)
+            );
+        }
+
+        let countedPoints = [];
+        let counts = [];
+
+        for (const point of allPoints) {
+            if (countedPoints.includes(point)) {
+                counts[countedPoints.indexOf(point)] += 1;
+            } else {
+                countedPoints.push(point);
+                counts.push(1);
+            }
+        }
+    }
+}
+
 // class MovableBlock extends Block {
 //     constructor(pos, sideLength) {
 //         super(pos, sideLength);
 //         this.velocity = new Vector2(0, 0);
 //     }
 // }
+
+const game = {};
 
 const speedLimit = (n, limit) => limit * Math.tanh(n / (1.25 * limit));
 
@@ -310,7 +346,7 @@ const player = {
     },
 };
 
-const mouse = {};
+const mouse = {}; // May be added for some feature I haven't thought of yet
 
 (async () => {
     // window.addEventListener("resize", function () {

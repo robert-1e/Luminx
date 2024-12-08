@@ -9,21 +9,23 @@ div#page {
 
 div#page {
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
     background-color: #000;
 }
 
-div.width-scaling {
-    flex-direction: row;
+img._player {
+    margin: 10px;
+    padding: 10px;
+    height: 50px;
+    background-color: #404040;
+    transition: margin 0.3s, padding 0.3s, background-color 0.3s, height 0.3s;
 }
 
-div.height-scaling {
-    flex-direction: column;
-}
-
-canvas#game-canvas {
-    margin: 50px;
-    background-color: #323232;
-    flex: 1 1 0;
+img._player:hover {
+    margin: 6.5px;
+    padding: 11px;
+    height: 55px;
+    background-color: #5b5b5b;
 }
