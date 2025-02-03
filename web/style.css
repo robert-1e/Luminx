@@ -15,6 +15,11 @@ div#page {
     background-color: #000;
 }
 
+a {
+    width: fit-content;
+    height: fit-content;
+}
+
 img._player {
     margin: 10px;
     padding: 10px;

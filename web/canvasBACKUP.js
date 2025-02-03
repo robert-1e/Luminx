@@ -48,8 +48,6 @@ class Block {
     }
 
     draw() {
-        // TODO: make the block cluster glow if the player is inhabiting it
-
         ctx.beginPath();
         ctx.fillStyle = this.colour;
         ctx.fillRect(
@@ -59,51 +57,9 @@ class Block {
             this.sideLength
         );
         // ctx.fill();
-
         ctx.closePath();
     }
 }
-
-class BlockCluster {
-    constructor(blocks) {
-        this.inhabited = false;
-        this.blocks = blocks;
-    }
-
-    draw() {
-        let allPoints = [];
-
-        for (const block of this.blocks) {
-            let blockHalfSideLen = block.sideLength / 2;
-
-            allPoints.push(
-                new Vector2(block.pos.x - blockHalfSideLen, block.pos.y - blockHalfSideLen),
-                new Vector2(block.pos.x - blockHalfSideLen, block.pos.y + blockHalfSideLen),
-                new Vector2(block.pos.x + blockHalfSideLen, block.pos.y + blockHalfSideLen),
-                new Vector2(block.pos.x + blockHalfSideLen, block.pos.y - blockHalfSideLen)
-            );
-        }
-
-        let countedPoints = [];
-        let counts = [];
-
-        for (const point of allPoints) {
-            if (countedPoints.includes(point)) {
-                counts[countedPoints.indexOf(point)] += 1;
-            } else {
-                countedPoints.push(point);
-                counts.push(1);
-            }
-        }
-    }
-}
-
-// class MovableBlock extends Block {
-//     constructor(pos, sideLength) {
-//         super(pos, sideLength);
-//         this.velocity = new Vector2(0, 0);
-//     }
-// }
 
 const game = {};
 
@@ -114,7 +70,7 @@ const player = {
     nextPos: new Vector2(50, 50),
 
     velocity: new Vector2(0, 0),
-    gravityStrength: 1,
+    gravityStrength: -1,
     canJump: 4, // ${player.canJump} frames left of jump; coyote jump
 
     sideLength: 20,
@@ -220,7 +176,9 @@ const player = {
         // });
     },
 
-    update() {
+    update(deltaTime) {
+        let timeMult = deltaTime / 16;
+
         // TODO: Make the player be able to function when the spirit is in habiting blocks (detached from player)
         let xDirection = this.processkeyEvents();
 
@@ -232,11 +190,11 @@ const player = {
         if (!this.freeSpirit) {
             this.processCollisions();
 
-            this.velocity.y += (this.gravityStrength * this.size) / 500;
+            this.velocity.y += (this.gravityStrength * this.size * timeMult) / 500;
 
             const speedLim = new Vector2(11, 50);
 
-            this.velocity.x = speedLimit(this.velocity.x, speedLim.x);
+            this.velocity.x = speedLimit(this.velocity.x, speedLim.x, timeMult);
 
             if (this.velocity.y >= this.size) {
                 this.velocity.y = this.size;
@@ -246,8 +204,8 @@ const player = {
 
             // this.processCollisions();
 
-            this.pos.x += this.velocity.x;
-            this.pos.y += this.velocity.y;
+            this.pos.x += this.velocity.x * timeMult;
+            this.pos.y += this.velocity.y * timeMult;
         } else {
             this.velocity.x = 0;
             this.velocity.y = 0;
@@ -259,16 +217,16 @@ const player = {
 
         if (this.freeSpirit) {
             if (this.spiritSize > this.sideLength * 0.35) {
-                this.spiritSize /= 1.2;
+                this.spiritSize *= timeMult / 1.2;
             } else {
-                this.spiritSize = this.sideLength * 0.3;
+                this.spiritSize = this.sideLength * 0.3 * timeMult;
             }
         } else {
             if (this.spiritSize < this.sideLength * 0.675) {
-                this.spiritSize *= 0.9;
-                this.spiritSize += 1;
+                this.spiritSize *= 0.97 * timeMult;
+                this.spiritSize += 1 * timeMult;
             } else {
-                this.spiritSize = this.sideLength * 0.7;
+                this.spiritSize = this.sideLength * 0.7 * timeMult;
             }
         }
 
@@ -383,7 +341,7 @@ const mouse = {}; // May be added for some feature I haven't thought of yet
                 keyEvents.space = true;
                 break;
             case "shift":
-                // player.freeSpirit = true;
+                player.freeSpirit = true;
                 break;
             default:
                 break;
@@ -431,9 +389,14 @@ let deltaTime = 0;
 function animate(currentTime) {
     deltaTime = currentTime - prevTime;
 
+    if (deltaTime > 1_000) {
+        requestAnimationFrame(animate);
+        return;
+    }
+
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    player.update();
+    player.update(deltaTime);
     player.draw();
 
     prevTime = currentTime;
