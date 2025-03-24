@@ -36,12 +36,7 @@ class Block {
     draw() {
         ctx.beginPath();
         ctx.fillStyle = this.colour;
-        ctx.fillRect(
-            this.pos.x - this.sideLength / 2,
-            this.pos.y - this.sideLength / 2,
-            this.sideLength,
-            this.sideLength
-        );
+        ctx.fillRect(this.pos.x - this.sideLength / 2, this.pos.y - this.sideLength / 2, this.sideLength, this.sideLength);
         // ctx.fill();
         ctx.closePath();
     }
@@ -54,8 +49,8 @@ function speedLimit(n, limit) {
 class Player {
     constructor(
         pos,
-        velocity,
         sideLength,
+        velocity = new Vector2(0, 0),
         gravityStrength = 1,
         bodyColour = "Black",
         spiritColour = "White",
@@ -122,9 +117,10 @@ class Player {
     /**
      * Subroutine to process and act on collisions (should be used only in update())
      */
-    processCollisions() {
+    processCollisions(blocks) {
         // TODO: fix wallhopping (not an issue yet since blocks don't work)
 
+        // Border collision
         if (this.nextPos.x < this.sideLength / 2) {
             this.velocity.x = this.velocity.x > 0 ? this.velocity.x : 0;
             this.pos.x = this.sideLength / 2;
@@ -142,6 +138,12 @@ class Player {
             this.velocity.y = this.velocity.y < 0 ? this.velocity.y : 0;
             this.pos.y = canvas.height - this.sideLength / 2;
             this.canJump = 4;
+        }
+
+        // Block collision
+        for (const block of blocks) {
+            if (this.willCollide(block)) {
+            }
         }
     }
 
@@ -244,15 +246,11 @@ class Player {
         halfSideLength = this.spiritSize / 2;
 
         ctx.moveTo(
-            this.pos.x -
-                halfSideLength +
-                ((this.sideLength - this.spiritSize) * this.velocity.x) / (this.sideLength * 2),
+            this.pos.x - halfSideLength + ((this.sideLength - this.spiritSize) * this.velocity.x) / (this.sideLength * 2),
             this.pos.y + halfSideLength
         );
         ctx.lineTo(
-            this.pos.x +
-                halfSideLength +
-                ((this.sideLength - this.spiritSize) * this.velocity.x) / (this.sideLength * 2),
+            this.pos.x + halfSideLength + ((this.sideLength - this.spiritSize) * this.velocity.x) / (this.sideLength * 2),
             this.pos.y + halfSideLength
         );
         ctx.lineTo(
@@ -270,9 +268,7 @@ class Player {
             this.pos.y - halfSideLength
         );
         ctx.lineTo(
-            this.pos.x -
-                halfSideLength +
-                ((this.sideLength - this.spiritSize) * this.velocity.x) / (this.sideLength * 2),
+            this.pos.x - halfSideLength + ((this.sideLength - this.spiritSize) * this.velocity.x) / (this.sideLength * 2),
             this.pos.y + halfSideLength
         );
 
@@ -282,8 +278,6 @@ class Player {
         ctx.shadowBlur = 0;
     }
 }
-
-const mouse = { down: false, x: undefined, y: undefined }; // May be added for some feature I haven't thought of yet
 
 function canvasResizeHandler(canvasContainer, canvas) {
     canvasContainer.className =

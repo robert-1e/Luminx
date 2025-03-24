@@ -1,23 +1,12 @@
-import {
-    canvasResizeHandler,
-    keyEvents,
-    Vector2,
-    Block,
-    Player,
-    speedLimit,
-} from "../assets/modules/game.js";
-
-console.log(1);
-
 const canvas = document.getElementById("game-canvas");
 
 const ctx = canvas.getContext("2d");
 
-const game = {};
+const game = {
+    blocks: [],
+};
 
-const player = new Player(new Vector2(50, 50), new Vector2(0, 0), 20, 1, "Black", "White");
-
-// const mouse = {}; // May be added for some feature I haven't thought of yet
+const player = new Player(new Vector2(50, 50), 20, new Vector2(0, 0));
 
 initEventListeners(document);
 

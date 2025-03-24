@@ -9,6 +9,10 @@ interface Vector2 {
 }
 
 interface Block {
+    /**
+     * @param {Vector2} pos Center of the block
+     * @param {number} sideLength Length of sides of the block
+     */
     new (pos: Vector2, sideLength: number): Block;
 
     /**
@@ -21,19 +25,19 @@ interface Block {
 interface Player {
     /**
      * Class to instantiate new player (used multiple times only in multiplayer)
-     * @param {Vector2} pos Initial position of player (overwritten at start probably)
-     * @param {Vector2} velocity Initial velocity of player (0, 0 is best)
+     * @param {Vector2} pos Initial position of the center of the player
      * @param {number} sideLength Sidelength of player (should be whatever tile size used)
-     * @param {number} gravityStrength 1 is normal
+     * @param {Vector2} velocity Initial velocity of player (default (0, 0))
+     * @param {number} gravityStrength Defaults to 1
      * @param {string} bodyColour Colour of body
      * @param {string} spiritColour Colour of spirit
      * @param {number} spiritSize Size of spirit (absolute; defaults to 0.7 * bodySize)
      */
     new (
         pos: Vector2,
-        velocity: Vector2,
         sideLength: number,
-        gravityStrength: number,
+        velocity?: Vector2,
+        gravityStrength?: number,
         bodyColour?: string,
         spiritColour?: string,
         spiritSize?: number
