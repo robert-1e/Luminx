@@ -11,7 +11,7 @@ canvas.style.height = `${height}px`;
 const ctx = canvas.getContext("2d");
 
 // const text = "singleplayer";
-const text = "The quick brown fox jumped over the lazy dog.".toLowerCase();
+const text = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".toLowerCase();
 const textColour = "#000000";
 
 const letters = {

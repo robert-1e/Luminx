@@ -47,6 +47,256 @@ function speedLimit(n, limit) {
 }
 
 class Player {
+    /**
+     * Initialises a new Player object
+     * @param {Vector2} pos Starting position
+     * @param {number} sideLength Sidelength of the player
+     * @param {Vector2} velocity Defaults to 0 0
+     * @param {number} gravityStrength Multiplier for gravity
+     * @param {string} bodyColour Colour of the body
+     * @param {string} spiritColour Colour of the spirit
+     * @param {number} spiritSize Between 0 and sideLength, defaults to 0.7 * sideLength
+     */
+    constructor(
+        pos,
+        sideLength,
+        velocity = new Vector2(0, 0),
+        gravityStrength = 1,
+        bodyColour = "Black",
+        spiritColour = "White",
+        spiritSize = undefined
+    ) {
+        this.pos = pos;
+        this.velocity = velocity;
+        this.gravityStrength = gravityStrength;
+        this.sideLength = sideLength;
+        this.size = sideLength * sideLength;
+        this.bodyColour = bodyColour;
+        this.spiritColour = spiritColour;
+        this.spiritSize = spiritSize || sideLength * 0.7;
+
+        this.canJump = 4; // ${player.canJump} frames left of jump; coyote jump
+    }
+
+    processkeyEvents(keyEvents) {
+        let xDirection = 0;
+
+        const asdf = 4;
+
+        if (keyEvents.a && !keyEvents.d) {
+            this.velocity.x -= asdf;
+            xDirection = -1;
+        } else if (keyEvents.d && !keyEvents.a) {
+            this.velocity.x += asdf;
+            xDirection = 1;
+        } else {
+            if (Math.abs(this.velocity.x) < 0.5) {
+                this.velocity.x = 0;
+            }
+        }
+
+        if (keyEvents.space && this.canJump) {
+            this.velocity.y = -(this.size / 40);
+            this.canJump = 0;
+        }
+
+        this.gravityStrength = keyEvents.s ? 2 : 1;
+
+        return xDirection * asdf;
+    }
+
+    /**
+     * Checking if the player will collide with something next frame
+     * @param {Block} block
+     * @returns {Boolean}
+     */
+    willCollide(block) {
+        let dist = (block.sideLength + this.sideLength) / 2;
+        return (
+            block.relPos.x - dist <= this.nextPos.x &&
+            this.nextPos.x <= block.relPos.x + dist &&
+            block.relPos.y - dist <= this.nextPos.y &&
+            this.nextPos.y <= block.relPos.y + dist
+        );
+    }
+
+    /**
+     * Subroutine to process and act on collisions (should be used only in update())
+     * @param {Object} borders Defines the confines of the player's world
+     * @param {number} borders.top y pos of the top border
+     * @param {number} borders.right x pos of the right border
+     * @param {number} borders.bottom y pos of the bottom border
+     * @param {number} borders.left x pos of the left border
+     * @param {Array.<Block>} blocks Array of blocks to process collisions on
+     */
+    processCollisions(borders, blocks = []) {
+        // TODO: fix wallhopping (not an issue yet since blocks don't work)
+
+        // Border collision
+        if (this.nextPos.x < borders.right + this.sideLength / 2) {
+            this.velocity.x = this.velocity.x > 0 ? this.velocity.x : 0;
+            this.pos.x = this.sideLength / 2;
+        } else if (this.nextPos.x > borders.left - this.sideLength / 2) {
+            this.velocity.x = this.velocity.x < 0 ? this.velocity.x : 0;
+            this.pos.x = canvas.width - this.sideLength / 2;
+        }
+
+        this.canJump = this.canJump > 0 ? this.canJump - 1 : 0;
+
+        if (this.nextPos.y < borders.top + this.sideLength / 2) {
+            this.velocity.y = this.velocity.y > 0 ? this.velocity.y : 0;
+            this.pos.y = this.sideLength / 2;
+        } else if (this.nextPos.y > borders.bottom - this.sideLength / 2) {
+            this.velocity.y = this.velocity.y < 0 ? this.velocity.y : 0;
+            this.pos.y = borders.bottom - this.sideLength / 2;
+            this.canJump = 4;
+        }
+
+        // Block collision
+        for (const block of blocks) {
+            if (this.willCollide(block)) {
+            }
+        }
+    }
+
+    /**
+     * Updates the player fully, removing the need for other functions to be called globally
+     * @param {Number} deltaTime Delta time of last completed frame
+     * @param {Object} borders Defines the confines of the player's world
+     * @param {number} borders.top y pos of the top border
+     * @param {number} borders.right x pos of the right border
+     * @param {number} borders.bottom y pos of the bottom border
+     * @param {number} borders.left x pos of the left border
+     */
+    update(keyEvents, deltaTime, borders) {
+        let timeMult = deltaTime / 16;
+
+        // TODO: Make the player be able to function when the spirit is in habiting blocks (detached from player)
+        let xDirection = this.processkeyEvents(keyEvents);
+
+        this.nextPos = new Vector2(
+            this.pos.x + this.velocity.x + xDirection,
+            this.pos.y + this.velocity.y + (this.gravityStrength * this.size) / 500
+        );
+
+        if (!this.freeSpirit) {
+            this.processCollisions(borders);
+
+            this.velocity.y += (this.gravityStrength * this.size * timeMult) / 500;
+
+            const speedLim = new Vector2(11, 50);
+
+            this.velocity.x = speedLimit(this.velocity.x, speedLim.x, timeMult);
+
+            if (this.velocity.y >= this.size) {
+                this.velocity.y = this.size;
+            } else if (this.velocity.y <= (-2 * this.size) / speedLim.y) {
+                this.velocity.y = (-2 * this.size) / speedLim.y;
+            }
+
+            // this.processCollisions();
+
+            this.pos.x += this.velocity.x * timeMult;
+            this.pos.y += this.velocity.y * timeMult;
+        } else {
+            this.velocity.x = 0;
+            this.velocity.y = 0;
+            this.pos = new Vector2(
+                (Math.floor(this.pos.x / this.sideLength) + 0.5) * this.sideLength,
+                (Math.floor(this.pos.y / this.sideLength) + 0.5) * this.sideLength
+            );
+        }
+
+        if (this.freeSpirit) {
+            if (this.spiritSize > this.sideLength * 0.35) {
+                this.spiritSize *= timeMult / 1.2;
+            } else {
+                this.spiritSize = this.sideLength * 0.3 * timeMult;
+            }
+        } else {
+            if (this.spiritSize < this.sideLength * 0.675) {
+                this.spiritSize *= 0.97 * timeMult;
+                this.spiritSize += 1 * timeMult;
+            } else {
+                this.spiritSize = this.sideLength * 0.7 * timeMult;
+            }
+        }
+
+        // if (this.spiritSize == this.sideLength * 0.3) {
+        //     game.levelList[canvas.levelID].roomsList[canvas.roomID].objects.push(
+        //         new Block(this.pos, this.sideLength, this.colour)
+        //     );
+        // } // TODO: Make the player inhabit the block when shift is released
+    }
+
+    /**
+     * Draws the player
+     * @param {CanvasRenderingContext2D} ctx Canvas context to draw on
+     */
+    draw(ctx) {
+        // Draw Player Body
+        ctx.beginPath();
+
+        ctx.fillStyle = this.bodyColour;
+
+        let halfSideLength = this.sideLength / 2;
+
+        ctx.moveTo(this.pos.x - halfSideLength, this.pos.y + halfSideLength);
+        ctx.lineTo(this.pos.x + halfSideLength, this.pos.y + halfSideLength);
+        ctx.lineTo(this.pos.x + halfSideLength + this.velocity.x, this.pos.y - halfSideLength);
+        ctx.lineTo(this.pos.x - halfSideLength + this.velocity.x, this.pos.y - halfSideLength);
+        ctx.lineTo(this.pos.x - halfSideLength, this.pos.y + halfSideLength);
+
+        ctx.fill();
+
+        ctx.closePath();
+
+        ctx.shadowColor = "#ffffff";
+        ctx.shadowBlur = (125 * this.spiritSize) / this.sideLength;
+        ctx.fillStyle = this.spiritColour;
+
+        // Draw Spirit
+        // Do not tweak, only touch it if you re-write the whole function.
+        // I have no clue how it works but it does somehow.
+        ctx.beginPath();
+
+        halfSideLength = this.spiritSize / 2;
+
+        ctx.moveTo(
+            this.pos.x - halfSideLength + ((this.sideLength - this.spiritSize) * this.velocity.x) / (this.sideLength * 2),
+            this.pos.y + halfSideLength
+        );
+        ctx.lineTo(
+            this.pos.x + halfSideLength + ((this.sideLength - this.spiritSize) * this.velocity.x) / (this.sideLength * 2),
+            this.pos.y + halfSideLength
+        );
+        ctx.lineTo(
+            this.pos.x +
+                halfSideLength +
+                ((this.sideLength - this.spiritSize) * this.velocity.x) / (this.sideLength * 2) +
+                (this.velocity.x * this.spiritSize) / this.sideLength,
+            this.pos.y - halfSideLength
+        );
+        ctx.lineTo(
+            this.pos.x -
+                halfSideLength +
+                ((this.sideLength - this.spiritSize) * this.velocity.x) / (this.sideLength * 2) +
+                (this.velocity.x * this.spiritSize) / this.sideLength,
+            this.pos.y - halfSideLength
+        );
+        ctx.lineTo(
+            this.pos.x - halfSideLength + ((this.sideLength - this.spiritSize) * this.velocity.x) / (this.sideLength * 2),
+            this.pos.y + halfSideLength
+        );
+
+        ctx.fill();
+        ctx.closePath();
+
+        ctx.shadowBlur = 0;
+    }
+}
+
+class OldPlayerClass {
     constructor(
         pos,
         sideLength,
@@ -279,14 +529,22 @@ class Player {
     }
 }
 
+/**
+ * Updates canvas class based on how big the canvas is relative to it's container
+ * @param {Element} canvasContainer Container of the canvas
+ * @param {Element} canvas
+ */
 function canvasResizeHandler(canvasContainer, canvas) {
     canvasContainer.className =
-        canvasContainer.clientWidth / canvas.width < canvasContainer.clientHeight / canvas.height
-            ? "width-scaling"
-            : "height-scaling";
+        canvasContainer.clientWidth / canvas.width < canvasContainer.clientHeight / canvas.height ? "width-scaling" : "height-scaling";
 }
 
-function initEventListeners(document) {
+/**
+ * Initialises event listeners for resize, mouse and key events
+ * @param {Window} window
+ * @param {Document} document
+ */
+function initEventListeners(window, document, mouse) {
     const canvasContainer = document.getElementById("page");
     const canvas = document.getElementById("game-canvas");
 
@@ -356,4 +614,4 @@ function initEventListeners(document) {
     });
 }
 
-// export { initEventListeners, resizeHandler, keyEvents, Vector2, Block, Player };
+export { keyEvents, Vector2, Block, speedLimit, Player, initEventListeners };

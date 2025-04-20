@@ -1,30 +1,13 @@
-// import { keyEvents, Vector2, Block, speedLimit, Player, initEventListeners } from "/assets/modules/classes.js";
-import { keyEvents, Vector2, Block, speedLimit, Player, initEventListeners } from "../assets/modules/classes.js";
+import { keyEvents, Vector2, Block, speedLimit, Player, initEventListeners } from "../assets/modules/game.js";
 
 const canvas = document.getElementById("game-canvas");
-const ctx = canvas.getContext("2d", { alpha: false, willReadFrequently: false });
+const ctx = canvas.getContext("2d");
 
-const gameState = {
+const game = {
     blocks: [],
 };
 
-const player = new Player(new Vector2(50, 50));
-
-let pT = 0;
-
-requestAnimationFrame(function animate(cT) {
-    let dT = cT - pT;
-
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    //
-
-    pT = cT;
-    requestAnimationFrame(animate);
-});
-
-// Old canvas
-
+const player = new Player(new Vector2(50, 50), 20, new Vector2(0, 0));
 
 const mouse = new Vector2(0, 0);
 

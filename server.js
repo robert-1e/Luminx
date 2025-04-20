@@ -1,6 +1,6 @@
 // deno run --allow-net --allow-read server.js
 
-const FALLBACK_PORT = 5500;
+let fallbackPort = 5500;
 const fsRoot = "./web";
 
 async function reqHandler(request) {
@@ -9,11 +9,10 @@ async function reqHandler(request) {
 
         const { socket, response } = Deno.upgradeWebSocket(request);
 
-        socket.onopen = () => {
-            console.log(`Someone connected to ${URL} via webhook`);
-        };
-
-        if ((URL = "/multiplayer/")) {
+        if ((URL = "/multiplayer")) {
+            socket.onopen = () => {
+                console.log(`Someone connected to ${URL} via webhook`);
+            };
             socket.onmessage = (event) => {
                 try {
                     let data = JSON.stringify(event.data);
@@ -28,20 +27,6 @@ async function reqHandler(request) {
                 console.error("ERROR:", error);
             };
         }
-
-        socket.onopen = () => {
-            console.log("CONNECTED");
-        };
-        socket.onmessage = (event) => {
-            console.log(`RECEIVED: ${event.data}`);
-            socket.send("pong");
-        };
-        socket.onclose = () => {
-            console.log("DISCONNECTED");
-        };
-        socket.onerror = (error) => {
-            console.error("ERROR:", error);
-        };
 
         return response;
     } else if (request.method === "POST") {
@@ -84,11 +69,20 @@ async function reqHandler(request) {
             }
         }
 
-        return new Response(file.readable, {
-            status: 200,
-            // Commented because it breaks anything other than html oopsies
-            // headers: { "content-type": "text/html" },
-        });
+        let response;
+
+        if (filePath.endsWith(".js")) {
+            response = new Response(file.readable, {
+                status: 200,
+                headers: { "content-type": "text/javascript" },
+            });
+        } else {
+            response = new Response(file.readable, {
+                status: 200,
+            });
+        }
+
+        return response;
     } else {
         return new Response("", {
             status: 405,
@@ -112,10 +106,10 @@ try {
     });
 } catch (error) {
     if (error.name === "PermissionDenied") {
-        console.log(`Permission denied to run on port 80, attempting port ${FALLBACK_PORT}\n`);
+        console.log(`Permission denied to run on port 80, attempting port ${fallbackPort}`);
 
         Deno.serve({
-            port: FALLBACK_PORT,
+            port: fallbackPort,
             handler: async (request) => {
                 try {
                     return reqHandler(request);
@@ -127,6 +121,6 @@ try {
             },
         });
     } else {
-        throw error;
+        console.log(error);
     }
 }
