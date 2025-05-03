@@ -42,12 +42,15 @@ class Vector2 {
     }
 
     /**
-     * Adds another vector to this one using cartesian co-ordinates
+     * Adds another vector to this one using cartesian co-ordinates, returns a reference to the same object
      * @param {Vector2} vector
+     * @returns {Vector2}
      */
     add(vector) {
         this.x += vector.x;
         this.y += vector.y;
+
+        return this;
     }
 }
 
@@ -207,7 +210,7 @@ const player = {
             this.vel.x = a * Math.tanh(this.vel.x / (1.25 * a));
 
             // Border Collisions
-            let nextPos = new Vector2(this.pos.x + this.vel.x * dTMult, this.pos.y + this.vel.y * dTMult);
+            let nextPos = new Vector2(this.vel.x * dTMult, this.vel.y * dTMult).add(this.pos);
             let inRadius = this.sideLength / 2;
 
             if (nextPos.x - inRadius < 0) {
@@ -266,8 +269,7 @@ const player = {
                 }
             }
 
-            this.pos.x = nextPos.x;
-            this.pos.y = nextPos.y;
+            this.pos = nextPos;
         } else {
             if (this.spiritState === 1) {
                 this.vel.x = 0;
@@ -287,8 +289,8 @@ const player = {
             this.spiritSize += 0.3 * (shrinkSpeed - 1);
             this.spiritSize /= shrinkSpeed;
 
+            // Key Events
             const a = 30;
-
             let keyVector = new Vector2(0, 0);
 
             if (keyStates.w && !keyStates.s) {
@@ -309,8 +311,46 @@ const player = {
 
             this.vel.r = a * Math.tanh(this.vel.r / (1.25 * a));
 
-            this.pos.x += this.vel.x * dTMult;
-            this.pos.y += this.vel.y * dTMult;
+            // Collisions
+            let nextPos = new Vector2(this.vel.x * dTMult, this.vel.y * dTMult).add(this.pos);
+
+            for (let row = 0; row < gameState.blocks.length; row++) {
+                for (let col = 0; col < gameState.blocks[row].length; col++) {
+                    const dist = ((this.sideLength * (this.spiritSize + 1)) / 2 + squareSize) / 2;
+
+                    if (
+                        !gameState.blocks[row][col] &&
+                        (col + 0.5) * squareSize - dist <= nextPos.x &&
+                        nextPos.x <= (col + 0.5) * squareSize + dist &&
+                        (row + 0.5) * squareSize - dist <= nextPos.y &&
+                        nextPos.y <= (row + 0.5) * squareSize + dist
+                    ) {
+                        let distX = nextPos.x - (col + 0.5) * squareSize;
+                        let distY = nextPos.y - (row + 0.5) * squareSize;
+
+                        if (-1 * distY >= Math.abs(distX)) {
+                            // Top section
+                            this.vel.y = this.vel.y < 0 ? this.vel.y : 0;
+                            nextPos.y = (row + 0.5) * squareSize - dist;
+                            this.jumpFrames = 4;
+                        } else if (-1 * distX > Math.abs(distY)) {
+                            // Left section
+                            this.vel.x = this.vel.x < 0 ? this.vel.x : 0;
+                            nextPos.x = (col + 0.5) * squareSize - dist;
+                        } else if (distX > Math.abs(distY)) {
+                            // Right section
+                            this.vel.x = this.vel.x > 0 ? this.vel.x : 0;
+                            nextPos.x = (col + 0.5) * squareSize + dist;
+                        } else if (distY >= Math.abs(distX)) {
+                            // Bottom section
+                            this.vel.y = this.vel.y > 0 ? this.vel.y : 0;
+                            nextPos.y = (row + 0.5) * squareSize + dist;
+                        }
+                    }
+                }
+            }
+
+            this.pos = nextPos;
         }
     },
 };
