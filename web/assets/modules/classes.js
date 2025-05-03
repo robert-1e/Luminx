@@ -63,9 +63,13 @@ export class Vector2 {
     }
 }
 
+export class Block {
+    constructor() {}
+}
+
 export class Player {
     /**
-     *
+     * Creates a player
      * @param {Vector2} pos Starting position of player
      * @param {Vector2} velocity Starting velocity of player
      * @param {string} spiritColour Colour of the spirit
@@ -148,7 +152,7 @@ export class Player {
         let timeMult = deltaTime / 16;
 
         // TODO: Make the player be able to function when the spirit is in habiting blocks (detached from player)
-        let xDirection = this.processkeyEvents(keyEvents);
+        let xDirection = this.processkeyStates(keyStates);
 
         this.nextPos = new Vector2(
             this.pos.x + this.velocity.x + xDirection,
@@ -212,3 +216,96 @@ export class Player {
 
     stringify() {}
 }
+
+// After this isn't finalised / reviewed
+
+export function speedLimit(n, limit) {
+    return limit * Math.tanh(n / (1.25 * limit));
+}
+
+/**
+ * Updates canvas class based on how big the canvas is relative to it's container
+ * @param {Element} canvasContainer Container of the canvas
+ * @param {Element} canvas
+ */
+function canvasResizeHandler(canvasContainer, canvas) {
+    canvasContainer.className =
+        canvasContainer.clientWidth / canvas.width < canvasContainer.clientHeight / canvas.height ? "width-scaling" : "height-scaling";
+}
+
+/**
+ * Initialises event listeners for resize, mouse and key events
+ * @param {Window} window
+ * @param {Document} document
+ */
+export function initEventListeners(window, document, mouse) {
+    const canvasContainer = document.getElementById("page");
+    const canvas = document.getElementById("game-canvas");
+
+    canvasResizeHandler(canvasContainer, canvas);
+
+    window.addEventListener("resize", () => {
+        canvasResizeHandler(canvasContainer, canvas);
+    });
+
+    window.addEventListener("mousemove", (event) => {
+        mouse.x = event.x;
+        mouse.y = event.y;
+    });
+
+    window.addEventListener("mousedown", () => {
+        mouse.down = true;
+    });
+
+    window.addEventListener("mouseup", () => {
+        mouse.down = false;
+    });
+
+    window.addEventListener("keydown", (event) => {
+        switch (event.key.toLowerCase()) {
+            case "a":
+                keyStates.a = true;
+                break;
+            case "s":
+                keyStates.s = true;
+                break;
+            case "d":
+                keyStates.d = true;
+                break;
+            case "w":
+            case " ":
+                keyStates.space = true;
+                break;
+            case "shift":
+                keyStates.shift = true;
+                break;
+            default:
+                break;
+        }
+    });
+
+    window.addEventListener("keyup", (event) => {
+        switch (event.key.toLowerCase()) {
+            case "a":
+                keyStates.a = false;
+                break;
+            case "s":
+                keyStates.s = false;
+                break;
+            case "d":
+                keyStates.d = false;
+                break;
+            case "w":
+            case " ":
+                keyStates.space = false;
+                break;
+            case "shift":
+                keyStates.shift = false;
+                break;
+            default:
+                break;
+        }
+    });
+}
+
+// keyStates, Vector2, Block, speedLimit, Player, initEventListeners;

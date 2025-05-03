@@ -1,4 +1,4 @@
-import { keyEvents, Vector2, Block, speedLimit, Player, initEventListeners } from "../assets/modules/game.js";
+import { keyEvents, Vector2, Block, speedLimit, Player, initEventListeners } from "/assets/modules/game.js";
 
 const canvas = document.getElementById("game-canvas");
 const ctx = canvas.getContext("2d");
