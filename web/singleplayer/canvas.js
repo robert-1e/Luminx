@@ -86,8 +86,8 @@ const player = {
 
             ctx.moveTo(this.pos.x - inRadius, this.pos.y + inRadius);
             ctx.lineTo(this.pos.x + inRadius, this.pos.y + inRadius);
-            ctx.lineTo(this.pos.x + inRadius + this.vel.x, this.pos.y - inRadius);
-            ctx.lineTo(this.pos.x - inRadius + this.vel.x, this.pos.y - inRadius);
+            ctx.lineTo(this.pos.x + inRadius , this.pos.y - inRadius);
+            ctx.lineTo(this.pos.x - inRadius , this.pos.y - inRadius);
             ctx.closePath();
 
             ctx.fill();
@@ -139,10 +139,10 @@ const player = {
 
             ctx.beginPath();
 
-            ctx.moveTo(this.pos.x - inRadius + ((1 - this.spiritSize) * this.vel.x) / 2, this.pos.y + inRadius);
-            ctx.lineTo(this.pos.x + inRadius + ((1 - this.spiritSize) * this.vel.x) / 2, this.pos.y + inRadius);
-            ctx.lineTo(this.pos.x + inRadius + ((1 + this.spiritSize) * this.vel.x) / 2, this.pos.y - inRadius);
-            ctx.lineTo(this.pos.x - inRadius + ((1 + this.spiritSize) * this.vel.x) / 2, this.pos.y - inRadius);
+            ctx.moveTo(this.pos.x - inRadius /* + ((1 - this.spiritSize) * this.vel.x) / 2 */, this.pos.y + inRadius);
+            ctx.lineTo(this.pos.x + inRadius /* + ((1 - this.spiritSize) * this.vel.x) / 2 */, this.pos.y + inRadius);
+            ctx.lineTo(this.pos.x + inRadius /* + ((1 + this.spiritSize) * this.vel.x) / 2 */, this.pos.y - inRadius);
+            ctx.lineTo(this.pos.x - inRadius /* + ((1 + this.spiritSize) * this.vel.x) / 2 */, this.pos.y - inRadius);
             ctx.closePath();
 
             ctx.fill();
@@ -278,23 +278,23 @@ const player = {
             const a = 30;
 
             if (keyStates.w && !keyStates.s) {
-                this.vel.y -= this.speed * dTMult / 2;
+                this.vel.y -= (this.speed * dTMult) / 2;
             } else if (!keyStates.w && keyStates.s) {
-                this.vel.y += this.speed * dTMult / 2;
+                this.vel.y += (this.speed * dTMult) / 2;
             }
 
             this.vel.x = a * Math.tanh(this.vel.x / (1.25 * a));
 
             if (keyStates.a && !keyStates.d) {
-                this.vel.x -= this.speed * dTMult / 2;
+                this.vel.x -= (this.speed * dTMult) / 2;
             } else if (!keyStates.a && keyStates.d) {
-                this.vel.x += this.speed * dTMult / 2;
+                this.vel.x += (this.speed * dTMult) / 2;
             }
 
             this.vel.y = a * Math.tanh(this.vel.y / (1.25 * a));
 
-            this.pos.x += this.vel.x;
-            this.pos.y += this.vel.y;
+            this.pos.x += this.vel.x * dTMult;
+            this.pos.y += this.vel.y * dTMult;
         }
     },
 };
