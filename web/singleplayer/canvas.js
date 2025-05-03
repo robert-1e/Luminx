@@ -378,7 +378,7 @@ function canvasResizeHandler() {
     });
 })();
 
-let pT = 0;
+let pT = -Infinity;
 
 requestAnimationFrame(function animate(cT) {
     let dT = cT - pT;
