@@ -16,7 +16,10 @@ class Vector2 {
     }
 
     set r(newR) {
+        if (!(this.x || this.y)) return 0;
+
         let ratio = newR / this.r;
+
         this.x *= ratio;
         this.y *= ratio;
 
@@ -36,6 +39,15 @@ class Vector2 {
         this.y = r * Math.sin(newTheta);
 
         return newTheta;
+    }
+
+    /**
+     * Adds another vector to this one using cartesian co-ordinates
+     * @param {Vector2} vector
+     */
+    add(vector) {
+        this.x += vector.x;
+        this.y += vector.y;
     }
 }
 
@@ -86,8 +98,8 @@ const player = {
 
             ctx.moveTo(this.pos.x - inRadius, this.pos.y + inRadius);
             ctx.lineTo(this.pos.x + inRadius, this.pos.y + inRadius);
-            ctx.lineTo(this.pos.x + inRadius , this.pos.y - inRadius);
-            ctx.lineTo(this.pos.x - inRadius , this.pos.y - inRadius);
+            ctx.lineTo(this.pos.x + inRadius, this.pos.y - inRadius);
+            ctx.lineTo(this.pos.x - inRadius, this.pos.y - inRadius);
             ctx.closePath();
 
             ctx.fill();
@@ -277,21 +289,25 @@ const player = {
 
             const a = 30;
 
-            if (keyStates.w && !keyStates.s) {
-                this.vel.y -= (this.speed * dTMult) / 2;
-            } else if (!keyStates.w && keyStates.s) {
-                this.vel.y += (this.speed * dTMult) / 2;
-            }
+            let keyVector = new Vector2(0, 0);
 
-            this.vel.x = a * Math.tanh(this.vel.x / (1.25 * a));
+            if (keyStates.w && !keyStates.s) {
+                keyVector.y -= 1;
+            } else if (!keyStates.w && keyStates.s) {
+                keyVector.y += 1;
+            }
 
             if (keyStates.a && !keyStates.d) {
-                this.vel.x -= (this.speed * dTMult) / 2;
+                keyVector.x -= 1;
             } else if (!keyStates.a && keyStates.d) {
-                this.vel.x += (this.speed * dTMult) / 2;
+                keyVector.x += 1;
             }
 
-            this.vel.y = a * Math.tanh(this.vel.y / (1.25 * a));
+            keyVector.r = (this.speed * dTMult) / 2;
+
+            this.vel.add(keyVector);
+
+            this.vel.r = a * Math.tanh(this.vel.r / (1.25 * a));
 
             this.pos.x += this.vel.x * dTMult;
             this.pos.y += this.vel.y * dTMult;
