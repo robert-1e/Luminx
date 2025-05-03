@@ -180,7 +180,7 @@ const player = {
                             // Top section
                             this.vel.y = this.vel.y < 0 ? this.vel.y : 0;
                             nextPos.y = (row + 0.5) * squareSize - dist;
-                            this.canJump = 4;
+                            this.jumpFrames = 4;
                         } else if (-1 * distX > Math.abs(distY)) {
                             // Left section
                             this.vel.x = this.vel.x < 0 ? this.vel.x : 0;
