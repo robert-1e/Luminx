@@ -51,31 +51,54 @@ const player = {
 
     sideLength: squareSize,
     spiritSize: 0.7,
+    // 0 for in host, 1 for transitioning, 2 for moving
+    spiritState: 0,
 
     drawSpiritLight() {
-        let inRadius = (this.sideLength * 0.95) / 2;
+        if (!keyStates.shift) {
+            let inRadius = (this.sideLength * 0.95) / 2;
 
-        ctx.shadowColor = "#fff";
-        ctx.shadowBlur = (75 * this.spiritSize * this.sideLength) / this.sideLength;
-        ctx.strokeStyle = "#fff";
-        ctx.fillStyle = "#fff";
+            ctx.shadowColor = "#fff";
+            ctx.shadowBlur = (75 * this.spiritSize * this.sideLength) / this.sideLength;
+            ctx.strokeStyle = "#fff";
+            ctx.fillStyle = "#fff";
 
-        ctx.beginPath();
+            ctx.beginPath();
 
-        ctx.moveTo(this.pos.x - inRadius, this.pos.y + inRadius);
-        ctx.lineTo(this.pos.x + inRadius, this.pos.y + inRadius);
-        ctx.lineTo(this.pos.x + inRadius + this.vel.x, this.pos.y - inRadius);
-        ctx.lineTo(this.pos.x - inRadius + this.vel.x, this.pos.y - inRadius);
-        ctx.closePath();
+            ctx.moveTo(this.pos.x - inRadius, this.pos.y + inRadius);
+            ctx.lineTo(this.pos.x + inRadius, this.pos.y + inRadius);
+            ctx.lineTo(this.pos.x + inRadius + this.vel.x, this.pos.y - inRadius);
+            ctx.lineTo(this.pos.x - inRadius + this.vel.x, this.pos.y - inRadius);
+            ctx.closePath();
 
-        ctx.fill();
+            ctx.fill();
 
-        ctx.shadowBlur = 0;
+            ctx.shadowBlur = 0;
+        } else {
+            let inRadius = (this.sideLength * this.spiritSize * 0.95) / 2;
+
+            ctx.shadowColor = "#fff";
+            ctx.shadowBlur = (75 * this.spiritSize * this.sideLength) / this.sideLength;
+            ctx.strokeStyle = "#fff";
+            ctx.fillStyle = "#fff";
+
+            ctx.beginPath();
+
+            ctx.moveTo(this.pos.x - inRadius, this.pos.y + inRadius);
+            ctx.lineTo(this.pos.x + inRadius, this.pos.y + inRadius);
+            ctx.lineTo(this.pos.x + inRadius + this.vel.x, this.pos.y - inRadius);
+            ctx.lineTo(this.pos.x - inRadius + this.vel.x, this.pos.y - inRadius);
+            ctx.closePath();
+
+            ctx.fill();
+
+            ctx.shadowBlur = 0;
+        }
     },
 
     draw() {
         // Drawing body
-        if (!keyStates.shift || true) {
+        if (!keyStates.shift) {
             ctx.strokeStyle = "#000";
             ctx.fillStyle = "#000";
 
@@ -108,7 +131,21 @@ const player = {
 
             ctx.fill();
         } else {
-            // TODO: Draw the spirit in it's free state
+            let inRadius = (this.sideLength * this.spiritSize) / 2;
+
+            ctx.shadowColor = "#fff";
+            ctx.strokeStyle = "#fff";
+            ctx.fillStyle = "#fff";
+
+            ctx.beginPath();
+
+            ctx.moveTo(this.pos.x - inRadius + ((1 - this.spiritSize) * this.vel.x) / 2, this.pos.y + inRadius);
+            ctx.lineTo(this.pos.x + inRadius + ((1 - this.spiritSize) * this.vel.x) / 2, this.pos.y + inRadius);
+            ctx.lineTo(this.pos.x + inRadius + ((1 + this.spiritSize) * this.vel.x) / 2, this.pos.y - inRadius);
+            ctx.lineTo(this.pos.x - inRadius + ((1 + this.spiritSize) * this.vel.x) / 2, this.pos.y - inRadius);
+            ctx.closePath();
+
+            ctx.fill();
         }
     },
 
@@ -117,7 +154,26 @@ const player = {
 
         const shrinkSpeed = 1.4;
 
+        if ((!keyStates.shift && this.spiritState === 2) || (keyStates.shift && this.spiritState === 0)) {
+            this.spiritState = 1;
+        }
+
         if (!keyStates.shift) {
+            if (this.spiritState === 1) {
+                this.vel.x = 0;
+                this.vel.y = 0;
+
+                let col = Math.floor(this.pos.x / this.sideLength);
+                let row = Math.floor(this.pos.y / this.sideLength);
+
+                this.pos.x = this.sideLength * (col + 0.5);
+                this.pos.y = this.sideLength * (row + 0.5);
+
+                gameState.blocks[row][col] = false;
+
+                this.spiritState = 0;
+            }
+
             this.spiritSize += 0.7 * (shrinkSpeed - 1);
             this.spiritSize /= shrinkSpeed;
 
@@ -201,13 +257,44 @@ const player = {
             this.pos.x = nextPos.x;
             this.pos.y = nextPos.y;
         } else {
+            if (this.spiritState === 1) {
+                this.vel.x = 0;
+                this.vel.y = 0;
+
+                let col = Math.floor(this.pos.x / this.sideLength);
+                let row = Math.floor(this.pos.y / this.sideLength);
+
+                this.pos.x = this.sideLength * (col + 0.5);
+                this.pos.y = this.sideLength * (row + 0.5);
+
+                gameState.blocks[row][col] = true;
+
+                this.spiritState = 2;
+            }
+
             this.spiritSize += 0.3 * (shrinkSpeed - 1);
             this.spiritSize /= shrinkSpeed;
 
-            this.vel.x = 0;
-            this.vel.y = 0;
-            this.pos.x = this.sideLength * (Math.floor(this.pos.x / this.sideLength) + 0.5);
-            this.pos.y = this.sideLength * (Math.floor(this.pos.y / this.sideLength) + 0.5);
+            const a = 30;
+
+            if (keyStates.w && !keyStates.s) {
+                this.vel.y -= this.speed * dTMult / 2;
+            } else if (!keyStates.w && keyStates.s) {
+                this.vel.y += this.speed * dTMult / 2;
+            }
+
+            this.vel.x = a * Math.tanh(this.vel.x / (1.25 * a));
+
+            if (keyStates.a && !keyStates.d) {
+                this.vel.x -= this.speed * dTMult / 2;
+            } else if (!keyStates.a && keyStates.d) {
+                this.vel.x += this.speed * dTMult / 2;
+            }
+
+            this.vel.y = a * Math.tanh(this.vel.y / (1.25 * a));
+
+            this.pos.x += this.vel.x;
+            this.pos.y += this.vel.y;
         }
     },
 };
@@ -280,21 +367,23 @@ let pT = 0;
 requestAnimationFrame(function animate(cT) {
     let dT = cT - pT;
 
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    if (dT < 1000) {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    player.drawSpiritLight();
+        player.drawSpiritLight();
 
-    ctx.fillStyle = "#000";
-    for (let row = 0; row < gameState.blocks.length; row++) {
-        for (let col = 0; col < gameState.blocks[row].length; col++) {
-            if (gameState.blocks[row][col]) {
-                ctx.fillRect(col * squareSize, row * squareSize, squareSize, squareSize);
+        ctx.fillStyle = "#000";
+        for (let row = 0; row < gameState.blocks.length; row++) {
+            for (let col = 0; col < gameState.blocks[row].length; col++) {
+                if (gameState.blocks[row][col]) {
+                    ctx.fillRect(col * squareSize, row * squareSize, squareSize, squareSize);
+                }
             }
         }
-    }
 
-    player.draw();
-    player.update(dT);
+        player.draw();
+        player.update(dT);
+    }
 
     pT = cT;
     requestAnimationFrame(animate);
