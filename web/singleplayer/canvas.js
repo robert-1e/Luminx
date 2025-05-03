@@ -1,8 +1,43 @@
-import { Vector2, Block } from "/assets/modules/classes.js";
-
 const pageDiv = document.getElementById("page");
 const canvas = document.getElementById("game-canvas");
 const ctx = canvas.getContext("2d", { alpha: true, willReadFrequently: false });
+
+class Vector2 {
+    constructor(x, y) {
+        this.x = x;
+        this.y = y;
+    }
+
+    /**
+     * @returns {number}
+     */
+    get r() {
+        return Math.hypot(this.x, this.y);
+    }
+
+    set r(newR) {
+        let ratio = newR / this.r;
+        this.x *= ratio;
+        this.y *= ratio;
+
+        return newR;
+    }
+
+    /**
+     * @returns {number}
+     */
+    get theta() {
+        return Math.atan2(this.x, this.y);
+    }
+
+    set theta(newTheta) {
+        let r = this.r;
+        this.x = r * Math.cos(newTheta);
+        this.y = r * Math.sin(newTheta);
+
+        return newTheta;
+    }
+}
 
 const squareSize = 20;
 const keyStates = {};
@@ -127,6 +162,41 @@ const player = {
             }
 
             // Block Collisions
+            for (let row = 0; row < gameState.blocks.length; row++) {
+                for (let col = 0; col < gameState.blocks[row].length; col++) {
+                    const dist = (this.sideLength + squareSize) / 2;
+
+                    if (
+                        gameState.blocks[row][col] &&
+                        (col + 0.5) * squareSize - dist <= nextPos.x &&
+                        nextPos.x <= (col + 0.5) * squareSize + dist &&
+                        (row + 0.5) * squareSize - dist <= nextPos.y &&
+                        nextPos.y <= (row + 0.5) * squareSize + dist
+                    ) {
+                        let distX = nextPos.x - (col + 0.5) * squareSize;
+                        let distY = nextPos.y - (row + 0.5) * squareSize;
+
+                        if (-1 * distY >= Math.abs(distX)) {
+                            // Top section
+                            this.vel.y = this.vel.y < 0 ? this.vel.y : 0;
+                            nextPos.y = (row + 0.5) * squareSize - dist;
+                            this.canJump = 4;
+                        } else if (-1 * distX > Math.abs(distY)) {
+                            // Left section
+                            this.vel.x = this.vel.x < 0 ? this.vel.x : 0;
+                            nextPos.x = (col + 0.5) * squareSize - dist;
+                        } else if (distX > Math.abs(distY)) {
+                            // Right section
+                            this.vel.x = this.vel.x > 0 ? this.vel.x : 0;
+                            nextPos.x = (col + 0.5) * squareSize + dist;
+                        } else if (distY >= Math.abs(distX)) {
+                            // Bottom section
+                            this.vel.y = this.vel.y > 0 ? this.vel.y : 0;
+                            nextPos.y = (row + 0.5) * squareSize + dist;
+                        }
+                    }
+                }
+            }
 
             this.pos.x = nextPos.x;
             this.pos.y = nextPos.y;
@@ -136,6 +206,8 @@ const player = {
 
             this.vel.x = 0;
             this.vel.y = 0;
+            this.pos.x = this.sideLength * (Math.floor(this.pos.x / this.sideLength) + 0.5);
+            this.pos.y = this.sideLength * (Math.floor(this.pos.y / this.sideLength) + 0.5);
         }
     },
 };
@@ -155,8 +227,8 @@ await (async () => {
                 ({ " ": 0, "#": 1, "P": 0 }[
                     ((c) => {
                         if (c === "P") {
-                            player.pos.x = col * squareSize;
-                            player.pos.y = row * squareSize;
+                            player.pos.x = (col + 0.5) * squareSize;
+                            player.pos.y = (row + 0.5) * squareSize;
                         }
                         return c;
                     })(data[row][col] || " ")
@@ -195,8 +267,6 @@ function canvasResizeHandler() {
     // });
 
     window.addEventListener("keydown", (event) => {
-        console.log(event.key.toLowerCase());
-
         keyStates[event.key.toLowerCase()] = true;
     });
 
