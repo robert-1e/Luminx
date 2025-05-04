@@ -196,7 +196,7 @@ const player = {
 
             // Key Events
             if (this.jumpFrames && (keyStates.w || keyStates[" "])) {
-                this.vel.y -= 10;
+                this.vel.y = -10;
                 this.jumpFrames = 0;
             }
 
@@ -247,20 +247,20 @@ const player = {
                         let distX = nextPos.x - (col + 0.5) * squareSize;
                         let distY = nextPos.y - (row + 0.5) * squareSize;
 
-                        if (-1 * distY >= Math.abs(distX)) {
+                        if (-1 * distY >= Math.abs(distX) && !gameState.blocks[row - 1][col]) {
                             // Top section
                             this.vel.y = this.vel.y < 0 ? this.vel.y : 0;
                             nextPos.y = (row + 0.5) * squareSize - dist;
                             this.jumpFrames = 4;
-                        } else if (-1 * distX > Math.abs(distY)) {
+                        } else if (-1 * distX > Math.abs(distY) && !gameState.blocks[row][col - 1]) {
                             // Left section
                             this.vel.x = this.vel.x < 0 ? this.vel.x : 0;
                             nextPos.x = (col + 0.5) * squareSize - dist;
-                        } else if (distX > Math.abs(distY)) {
+                        } else if (distX > Math.abs(distY) && !gameState.blocks[row][col + 1]) {
                             // Right section
                             this.vel.x = this.vel.x > 0 ? this.vel.x : 0;
                             nextPos.x = (col + 0.5) * squareSize + dist;
-                        } else if (distY >= Math.abs(distX)) {
+                        } else if (distY >= Math.abs(distX) && !gameState.blocks[row + 1][col]) {
                             // Bottom section
                             this.vel.y = this.vel.y > 0 ? this.vel.y : 0;
                             nextPos.y = (row + 0.5) * squareSize + dist;
