@@ -311,8 +311,30 @@ const player = {
 
             this.vel.r = a * Math.tanh(this.vel.r / (1.25 * a));
 
-            // Collisions
             let nextPos = new Vector2(this.vel.x * dTMult, this.vel.y * dTMult).add(this.pos);
+            let inRadius = (this.sideLength * (this.spiritSize + 1)) / 4;
+
+            // Border Collisions
+            if (nextPos.x - inRadius < 0) {
+                nextPos.x = inRadius;
+                this.vel.x = this.vel.x < 0 ? 0 : this.vel.x;
+            } else if (canvas.width < nextPos.x + inRadius) {
+                nextPos.x = canvas.width - inRadius;
+                this.vel.x = this.vel.x > 0 ? 0 : this.vel.x;
+            }
+
+            if (nextPos.y - inRadius < 0) {
+                nextPos.y = inRadius;
+                this.vel.y = this.vel.y < 0 ? 0 : this.vel.x;
+            } else if (canvas.height < nextPos.y + inRadius) {
+                nextPos.y = canvas.height - inRadius;
+                this.vel.y = this.vel.y > 0 ? 0 : this.vel.x;
+                this.jumpFrames = 4;
+            } else if (0 < this.jumpFrames) {
+                this.jumpFrames--;
+            }
+
+            // Block Collisions
 
             for (let row = 0; row < gameState.blocks.length; row++) {
                 for (let col = 0; col < gameState.blocks[row].length; col++) {
