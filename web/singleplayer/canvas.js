@@ -57,6 +57,20 @@ class Vector2 {
 const squareSize = 20;
 const keyStates = {};
 const gameState = {};
+const blockTypes = {
+    0: {
+        name: "air",
+        visible: false,
+        collision: false,
+        controllable: false,
+    },
+    1: {
+        name: "block",
+        visible: true,
+        collision: true,
+        controllable: true,
+    },
+};
 const player = {
     pos: new Vector2(0, 0),
     vel: new Vector2(0, 0),
@@ -69,7 +83,7 @@ const player = {
     // 0 for in host, 1 for transitioning, 2 for moving
     spiritState: 0,
 
-    drawSpiritLight() {
+    drawSpiritGlow() {
         if (!keyStates.shift) {
             let inRadius = (this.sideLength * 0.95) / 2;
 
@@ -209,9 +223,11 @@ const player = {
             const a = 30;
             this.vel.x = a * Math.tanh(this.vel.x / (1.25 * a));
 
-            // Border Collisions
             let nextPos = new Vector2(this.vel.x * dTMult, this.vel.y * dTMult).add(this.pos);
+            // let nextPos = structuredClone(this.pos);
             let inRadius = this.sideLength / 2;
+
+            // Border Collisions
 
             if (nextPos.x - inRadius < 0) {
                 nextPos.x = inRadius;
@@ -244,23 +260,40 @@ const player = {
                         (row + 0.5) * squareSize - dist <= nextPos.y &&
                         nextPos.y <= (row + 0.5) * squareSize + dist
                     ) {
+                        // Distances from center of block to center of player
+
+                        // Left of block = negative
                         let distX = nextPos.x - (col + 0.5) * squareSize;
+
+                        // Above block = negative
                         let distY = nextPos.y - (row + 0.5) * squareSize;
 
-                        if (-1 * distY >= Math.abs(distX) && !gameState.blocks[row - 1][col]) {
-                            // Top section
+                        // let distX = this.pos.x - (col + 0.5) * squareSize;
+                        // let distY = this.pos.y - (row + 0.5) * squareSize;
+
+                        let above = gameState.blocks[row - 1]?.[col] || 0,
+                            left = gameState.blocks[row]?.[col - 1] || 0,
+                            right = gameState.blocks[row]?.[col + 1] || 0,
+                            under = gameState.blocks[row + 1]?.[col] || 0;
+
+                        if (
+                            ((distY <= 0 && distX - distY <= 0 && left) ||
+                                -distY >= Math.abs(distX) ||
+                                (distY <= 0 && distY + distX >= 0 && right)) &&
+                            !above
+                        ) {
                             this.vel.y = this.vel.y < 0 ? this.vel.y : 0;
                             nextPos.y = (row + 0.5) * squareSize - dist;
                             this.jumpFrames = 4;
-                        } else if (-1 * distX > Math.abs(distY) && !gameState.blocks[row][col - 1]) {
+                        } else if (-distX > Math.abs(distY) && !left) {
                             // Left section
                             this.vel.x = this.vel.x < 0 ? this.vel.x : 0;
                             nextPos.x = (col + 0.5) * squareSize - dist;
-                        } else if (distX > Math.abs(distY) && !gameState.blocks[row][col + 1]) {
+                        } else if (distX > Math.abs(distY) && !right) {
                             // Right section
                             this.vel.x = this.vel.x > 0 ? this.vel.x : 0;
                             nextPos.x = (col + 0.5) * squareSize + dist;
-                        } else if (distY >= Math.abs(distX) && !gameState.blocks[row + 1][col]) {
+                        } else if (((distY >= 0 && distX + distY <= 0 && left) || distY >= Math.abs(distX) ||  (distY >= 0 && distX - distY >= 0 && right)) && !under) {
                             // Bottom section
                             this.vel.y = this.vel.y > 0 ? this.vel.y : 0;
                             nextPos.y = (row + 0.5) * squareSize + dist;
@@ -448,7 +481,7 @@ requestAnimationFrame(function animate(cT) {
     if (dT < 1000) {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-        player.drawSpiritLight();
+        player.drawSpiritGlow();
 
         ctx.fillStyle = "#000";
         for (let row = 0; row < gameState.blocks.length; row++) {
