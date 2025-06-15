@@ -1,3 +1,5 @@
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
 const pageDiv = document.getElementById("page");
 const canvas = document.getElementById("game-canvas");
 const ctx = canvas.getContext("2d", { alpha: true, willReadFrequently: false });
@@ -413,6 +415,92 @@ const player = {
     },
 };
 
+let players = [];
+function drawPlayer(playerData) {
+    let x, y, dx, isCtrl, spiritSize, sideLength;
+    try {
+        ({ x, y, dx, isCtrl, spiritSize, sideLength } = playerData);
+    } catch (error) {
+        return false;
+    }
+
+    // Drawing body
+    if (isCtrl) {
+        ctx.strokeStyle = "#000";
+        ctx.fillStyle = "#000";
+
+        ctx.beginPath();
+
+        let inRadius = sideLength / 2;
+
+        ctx.moveTo(x - inRadius, y + inRadius);
+        ctx.lineTo(x + inRadius, y + inRadius);
+        ctx.lineTo(x + inRadius + dx, y - inRadius);
+        ctx.lineTo(x - inRadius + dx, y - inRadius);
+        ctx.closePath();
+
+        ctx.fill();
+
+        // Draw spirit
+        inRadius *= spiritSize;
+
+        ctx.shadowColor = "#fff";
+        ctx.strokeStyle = "#fff";
+        ctx.fillStyle = "#fff";
+
+        ctx.beginPath();
+
+        ctx.moveTo(x - inRadius + ((1 - spiritSize) * dx) / 2, y + inRadius);
+        ctx.lineTo(x + inRadius + ((1 - spiritSize) * dx) / 2, y + inRadius);
+        ctx.lineTo(x + inRadius + ((1 + spiritSize) * dx) / 2, y - inRadius);
+        ctx.lineTo(x - inRadius + ((1 + spiritSize) * dx) / 2, y - inRadius);
+        ctx.closePath();
+
+        ctx.fill();
+    } else {
+        let inRadius = (sideLength * spiritSize) / 2;
+
+        ctx.shadowColor = "#fff";
+        ctx.strokeStyle = "#fff";
+        ctx.fillStyle = "#fff";
+
+        ctx.beginPath();
+
+        ctx.moveTo(x - inRadius /* + ((1 - spiritSize) * dx) / 2 */, y + inRadius);
+        ctx.lineTo(x + inRadius /* + ((1 - spiritSize) * dx) / 2 */, y + inRadius);
+        ctx.lineTo(x + inRadius /* + ((1 + spiritSize) * dx) / 2 */, y - inRadius);
+        ctx.lineTo(x - inRadius /* + ((1 + spiritSize) * dx) / 2 */, y - inRadius);
+        ctx.closePath();
+
+        ctx.fill();
+    }
+
+    return true;
+}
+
+let ws;
+let ws_isOpen = false;
+(async () => {
+    ws = new WebSocket("/multiplayer");
+    ws.onopen = () => {
+        console.log("opened ws");
+        ws_isOpen = true;
+    };
+    ws.onclose = () => {
+        console.log("ws closed");
+    };
+    ws.onmessage = (event) => {
+        let data = JSON.parse(event.data);
+
+        if (data.type === "playerdata") {
+            players[data.id] = data;
+        } else {
+            // well thios is not supposed to happenj so idk ¯\_(ツ)_/¯
+        }
+    };
+    ws.onerror = () => {};
+})();
+
 // TMP
 await (async () => {
     let [metaData, ...data] = (await (await fetch("/singleplayer/level.txt")).text()).split("\n");
@@ -480,6 +568,11 @@ function canvasResizeHandler() {
 
 let pT = -Infinity;
 
+while (!ws_isOpen) {
+    await sleep(100);
+    console.log("CONNECTING...");
+}
+
 requestAnimationFrame(function animate(cT) {
     let dT = cT - pT;
 
@@ -498,8 +591,25 @@ requestAnimationFrame(function animate(cT) {
         }
 
         player.draw();
+        for (let i = 0; i < players.length; i++) {
+            if (!drawPlayer(players[i])) {
+                // Don't rly care icl
+            }
+        }
         player.update(dT);
     }
+
+    ws.send(
+        JSON.stringify({
+            type: "playerdata",
+            x: player.pos.x,
+            y: player.pos.y,
+            dx: player.vel.x,
+            isCtrl: player.spiritState < 1,
+            spiritSize: player.spiritSize,
+            sideLength: player.sideLength,
+        })
+    );
 
     pT = cT;
     requestAnimationFrame(animate);

@@ -1,30 +1,108 @@
 // deno run --allow-net --allow-read server.js
 
-let fallbackPort = 5500;
+let fallbackPort = 5555;
 const fsRoot = "./web";
+
+class Vector2 {
+    constructor(x, y) {
+        this.x = x;
+        this.y = y;
+    }
+
+    /**
+     * @returns {number}
+     */
+    get r() {
+        return Math.hypot(this.x, this.y);
+    }
+
+    set r(newR) {
+        if (!(this.x || this.y)) return 0;
+
+        let ratio = newR / this.r;
+
+        this.x *= ratio;
+        this.y *= ratio;
+
+        return newR;
+    }
+
+    /**
+     * @returns {number}
+     */
+    get theta() {
+        return Math.atan2(this.x, this.y);
+    }
+
+    set theta(newTheta) {
+        let r = this.r;
+        this.x = r * Math.cos(newTheta);
+        this.y = r * Math.sin(newTheta);
+
+        return newTheta;
+    }
+
+    /**
+     * Adds another vector to this one using cartesian co-ordinates, returns a reference to the same object
+     * @param {Vector2} vector
+     * @returns {Vector2}
+     */
+    add(vector) {
+        this.x += vector.x;
+        this.y += vector.y;
+
+        return this;
+    }
+}
+
+let websockets = [];
 
 async function reqHandler(request) {
     if (request.headers.get("upgrade") === "websocket") {
-        let URL = new URL(request.url).pathname;
+        const wsURL = new URL(request.url).pathname;
 
         const { socket, response } = Deno.upgradeWebSocket(request);
 
-        if ((URL = "/multiplayer")) {
+        if (wsURL === "/multiplayer") {
             socket.onopen = () => {
-                console.log(`Someone connected to ${URL} via webhook`);
+                socket.id = websockets.push(socket) - 1;
+                console.log(`Someone connected to ${wsURL} via webhook`);
             };
             socket.onmessage = (event) => {
+                let data;
                 try {
-                    let data = JSON.stringify(event.data);
+                    data = JSON.parse(event.data);
                 } catch (error) {
+                    return new Response(/* Bad data */);
+                }
+
+                if (data.type === "playerdata") {
+                    for (const ws of websockets) {
+                        if (ws.id !== socket.id && !ws._closed) {
+                            ws.send(
+                                JSON.stringify({
+                                    type: data.type,
+                                    id: socket.id,
+                                    x: data.x,
+                                    y: data.y,
+                                    dx: data.dx,
+                                    isCtrl: data.isCtrl,
+                                    spiritSize: data.spiritSize,
+                                    sideLength: data.sideLength,
+                                })
+                            );
+                        }
+                    }
+                } else {
                     return new Response(/* Bad data */);
                 }
             };
             socket.onclose = () => {
-                console.log("DISCONNECTED");
+                console.log(`id: ${socket.id} disconnected`);
+                socket._closed = true;
             };
             socket.onerror = (error) => {
-                console.error("ERROR:", error);
+                console.error(error);
             };
         }
 

@@ -1,0 +1,29 @@
+html,
+body,
+div#page {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+}
+
+div#page {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #000;
+}
+
+div.width-scaling {
+    flex-direction: row;
+}
+
+div.height-scaling {
+    flex-direction: column;
+}
+
+canvas#game-canvas {
+    margin: 50px;
+    background-color: #323232;
+    flex: 1 1 0;
+}
