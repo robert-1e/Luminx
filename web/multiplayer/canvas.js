@@ -58,7 +58,7 @@ class Vector2 {
 
 const squareSize = 20;
 const keyStates = {};
-const gameState = {};
+const gameState = { blocks: false };
 const blockTypes = {
     0: {
         name: "air",
@@ -200,7 +200,8 @@ const player = {
                 this.pos.x = this.sideLength * (col + 0.5);
                 this.pos.y = this.sideLength * (row + 0.5);
 
-                gameState.blocks[row][col] = false;
+                ws.send(JSON.stringify({ type: "spiritupd", value: 0, pos: { x: col, y: row } }));
+                gameState.blocks[row][col] = 0;
 
                 this.spiritState = 0;
             }
@@ -319,7 +320,8 @@ const player = {
                 this.pos.x = this.sideLength * (col + 0.5);
                 this.pos.y = this.sideLength * (row + 0.5);
 
-                gameState.blocks[row][col] = true;
+                ws.send(JSON.stringify({ type: "spiritupd", value: 1, pos: { x: col, y: row } }));
+                gameState.blocks[row][col] = 1;
 
                 this.spiritState = 2;
             }
@@ -494,50 +496,43 @@ let ws_isOpen = false;
 
         if (data.type === "playerdata") {
             players[data.id] = data;
+        } else if (data.type === "blockupd") {
+            gameState.blocks[data.y][data.x] = data.block;
+        } else if (data.type === "mapupd") {
+            console.log("MAPUPD");
+
+            gameState.blocks = data.blocks;
+        } else if (data.type === "playerdisconnect") {
+            delete players[data.id];
+        } else if (data.type === "init") {
+            console.log("INIT");
+
+            gameState.blocks = data.blocks;
+            gameState.width = data.width;
+            gameState.height = data.height;
+            player.pos.x = data.spawnPoint.x;
+            player.pos.y = data.spawnPoint.y;
+            // squareSize = data.squareSize;
+
+            canvas.width = gameState.width * squareSize;
+            canvas.height = gameState.height * squareSize;
         } else {
             // well thios is not supposed to happenj so idk ¯\_(ツ)_/¯
         }
     };
-    ws.onerror = () => {};
+    ws.onerror = () => {
+        // Oh noes
+    };
 })();
 
-// TMP
-await (async () => {
-    let [metaData, ...data] = (await (await fetch("/singleplayer/level.txt")).text()).split("\n");
-
-    data = data.map((v) => v.split(""));
-
-    let { width, height } = JSON.parse(metaData);
-    gameState.width = width;
-    gameState.height = height;
-    gameState.blocks = new Array(height).fill(0).map((_, row) =>
-        new Array(width).fill(0).map(
-            (_, col) =>
-                ({ " ": 0, "#": 1, "P": 0 }[
-                    ((c) => {
-                        if (c === "P") {
-                            player.pos.x = (col + 0.5) * squareSize;
-                            player.pos.y = (row + 0.5) * squareSize;
-                        }
-                        return c;
-                    })(data[row][col] || " ")
-                ])
-        )
-    );
-    canvas.width = gameState.width * squareSize;
-    canvas.height = gameState.height * squareSize;
-
-    // console.log(`{ ${gameState.blocks.map((v) => `new int[][]{ ${v.join(", ")} }`).join(",\n")} }`);
-})();
-
-/**
- * Updates canvas class based on how big the canvas is relative to it's container
- */
-function canvasResizeHandler() {
-    pageDiv.className = pageDiv.clientWidth / canvas.width < pageDiv.clientHeight / canvas.height ? "width-scaling" : "height-scaling";
-}
-
+// Windows event listeners init
 (async () => {
+    /**
+     * Updates canvas class based on how big the canvas is relative to it's container
+     */
+    function canvasResizeHandler() {
+        pageDiv.className = pageDiv.clientWidth / canvas.width < pageDiv.clientHeight / canvas.height ? "width-scaling" : "height-scaling";
+    }
     canvasResizeHandler();
 
     window.addEventListener("resize", () => {
@@ -568,7 +563,7 @@ function canvasResizeHandler() {
 
 let pT = -Infinity;
 
-while (!ws_isOpen) {
+while (!ws_isOpen || !gameState.blocks) {
     await sleep(100);
     console.log("CONNECTING...");
 }
