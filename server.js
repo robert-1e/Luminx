@@ -57,6 +57,37 @@ class Vector2 {
 
 let websockets = [];
 
+// TMP (?)
+const squareSize = 20;
+const gameState = { spawnPoints: [] };
+await (async () => {
+    let [metaData, ...data] = (await Deno.readTextFile("./web/singleplayer/level.txt")).split("\n");
+
+    data = data.map((v) => v.split(""));
+
+    let { width, height } = JSON.parse(metaData);
+    gameState.width = width;
+    gameState.height = height;
+    gameState.blocks = new Array(height).fill(0).map((_, row) =>
+        new Array(width).fill(0).map(
+            (_, col) =>
+                ({ " ": 0, "#": 1, "P": 0 }[
+                    ((c) => {
+                        if (c === "P") {
+                            gameState.spawnPoints.push({
+                                x: (col + 0.5) * squareSize,
+                                y: (row + 0.5) * squareSize,
+                            });
+                        }
+                        return c;
+                    })(data[row][col] || " ")
+                ])
+        )
+    );
+
+    // console.log(`{ ${gameState.blocks.map((v) => `new int[][]{ ${v.join(", ")} }`).join(",\n")} }`);
+})();
+
 async function reqHandler(request) {
     if (request.headers.get("upgrade") === "websocket") {
         const wsURL = new URL(request.url).pathname;
@@ -65,8 +96,29 @@ async function reqHandler(request) {
 
         if (wsURL === "/multiplayer") {
             socket.onopen = () => {
-                socket.id = websockets.push(socket) - 1;
-                console.log(`Someone connected to ${wsURL} via webhook`);
+                for (let i = 0; i < websockets.length; i++) {
+                    if (websockets[i]._closed) {
+                        websockets[i] = socket;
+                        socket.id = i;
+                        break;
+                    }
+                }
+
+                if (typeof socket.id !== "number") {
+                    socket.id = websockets.push(socket) - 1;
+                }
+
+                socket.send(
+                    JSON.stringify({
+                        type: "init",
+                        blocks: gameState.blocks,
+                        width: gameState.width,
+                        height: gameState.height,
+                        spawnPoint: gameState.spawnPoints[Math.floor((gameState.spawnPoints.length - 1) * Math.random())],
+                    })
+                );
+
+                console.log(`CONNECT at id:${socket.id}`);
             };
             socket.onmessage = (event) => {
                 let data;
@@ -93,12 +145,37 @@ async function reqHandler(request) {
                             );
                         }
                     }
+                } else if (data.type === "spiritupd") {
+                    gameState.blocks[data.pos.y][data.pos.x] = data.value;
+
+                    for (const ws of websockets) {
+                        if (ws.id !== socket.id && !ws._closed) {
+                            ws.send(
+                                JSON.stringify({
+                                    type: "blockupd",
+                                    x: data.pos.x,
+                                    y: data.pos.y,
+                                    block: data.value,
+                                })
+                            );
+                        }
+                    }
                 } else {
                     return new Response(/* Bad data */);
                 }
             };
             socket.onclose = () => {
-                console.log(`id: ${socket.id} disconnected`);
+                console.log(`DISCONNECT at id:${socket.id}`);
+                for (const ws of websockets) {
+                    if (ws.id !== socket.id && !ws._closed) {
+                        ws.send(
+                            JSON.stringify({
+                                type: "playerdisconnect",
+                                id: socket.id,
+                            })
+                        );
+                    }
+                }
                 socket._closed = true;
             };
             socket.onerror = (error) => {
@@ -116,9 +193,7 @@ async function reqHandler(request) {
     } else if (request.method === "GET") {
         const URLPath = new URL(request.url).pathname;
 
-        let filePath;
-
-        filePath = `${fsRoot}${URLPath.match(/^[^&]*/)}`;
+        let filePath = `${fsRoot}${URLPath.match(/^[^&]*/)}`;
 
         if (!filePath.endsWith("/") && !/\.[^\/\.]+$/.test(filePath)) {
             filePath += "/";
